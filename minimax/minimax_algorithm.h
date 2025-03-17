@@ -15,21 +15,25 @@
 //
 //
 
+
+template <typename STATE, typename MOVE> struct MinimaxGraphNode {
+  MOVE move_taken_here;
+  float evaluation;
+  MinimaxGraphNode<STATE, MOVE> *parent;
+  std::vector<MinimaxGraphNode<STATE, MOVE> *> children;
+};
+
 template <typename STATE, typename MOVE> class MinimaxSolver {
 private:
   STATE internal_state;
+  MinimaxGraphNode<STATE,MOVE> head_node;
   int8_t parity;
+
 
 public:
   MinimaxSolver(STATE current_state, int8_t parity);
 
   MOVE findBestMove(int depth);
-};
-
-template <typename STATE, typename MOVE> struct MinimaxGraphNode {
-  float evaluation;
-  MinimaxGraphNode<STATE, MOVE> *parent;
-  std::vector<MinimaxGraphNode<STATE, MOVE> *> children;
 };
 
 #endif

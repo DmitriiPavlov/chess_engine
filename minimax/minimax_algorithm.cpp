@@ -28,6 +28,7 @@ void populateChildren(MinimaxGraphNode<STATE, MOVE> *node, STATE state,
     MinimaxGraphNode<STATE, MOVE> *new_node =
         new MinimaxGraphNode<STATE, MOVE>();
     new_node->parent = node;
+    new_node->move_taken_here = move;
     new_node->children = std::vector<MinimaxGraphNode<STATE, MOVE> *>();
 
     playMove(state, move);
@@ -39,21 +40,29 @@ void populateChildren(MinimaxGraphNode<STATE, MOVE> *node, STATE state,
 }
 
 template <typename STATE, typename MOVE>
-float minEvaluation(std::vector<MinimaxGraphNode<STATE, MOVE> *> node_list) {
+MinimaxGraphNode<STATE, MOVE> *
+minEvaluationNode(std::vector<MinimaxGraphNode<STATE, MOVE> *> node_list) {
   float min = 0;
+  MinimaxGraphNode<STATE, MOVE> *out;
   for (auto *node : node_list) {
-    if (node->evaluation < min)
+    if (node->evaluation < min) {
       min = node->evaluation;
+      out = node;
+    }
   }
   return min;
 }
 
 template <typename STATE, typename MOVE>
-float maxEvaluation(std::vector<MinimaxGraphNode<STATE, MOVE> *> node_list) {
+MinimaxGraphNode<STATE, MOVE> *
+maxEvaluationNode(std::vector<MinimaxGraphNode<STATE, MOVE> *> node_list) {
   float max = 0;
+  MinimaxGraphNode<STATE, MOVE> *out;
   for (auto *node : node_list) {
-    if (node->evaluation > max)
+    if (node->evaluation > max) {
       max = node->evaluation;
+      out = node;
+    }
   }
   return max;
 }
@@ -68,10 +77,10 @@ void updateEvaluation(MinimaxGraphNode<STATE, MOVE> *node, int8_t parity) {
 
   if (parity < 0)
     node->evaluation =
-        std::min(node->evaluation, minEvaluation(node->children));
+        std::min(node->evaluation, minEvaluationNode(node->children)->evaluation);
   if (parity > 0)
     node->evaluation =
-        std::max(node->evaluation, maxEvaluation(node->children));
+        std::max(node->evaluation, maxEvaluationNode(node->children)->evaluation);
 
   if (original_evaluation != node->evaluation && node->parent != nullptr)
     updateEvaluation(node->parent);
@@ -86,14 +95,37 @@ template <typename STATE, typename MOVE>
 void expandNode(MinimaxGraphNode<STATE, MOVE> *node, STATE state,
                 int8_t parity) {
   populateChildren(node, state, parity);
-  updateEvaluation(node,parity);
+  updateEvaluation(node, parity);
+}
+
+template <typename STATE, typename MOVE>
+void expandNodeWithDepth(MinimaxGraphNode<STATE, MOVE> *node, STATE state,
+                         int8_t parity, int depth) {
+  if (depth == 0)
+    return;
+  expandNode(node);
+
+  for (auto *node : node->children) {
+    expandNode(node, playMove(state, node->move_taken_here), -1 * parity,
+               depth - 1);
+  }
 }
 
 template <typename STATE, typename MOVE>
 MinimaxSolver<STATE, MOVE>::MinimaxSolver(STATE current_state, int8_t parity) {
   this->internal_state = current_state;
   this->parity = parity;
+
+  this->head_node = new MinimaxGraphNode<STATE, MOVE>();
+  head_node->evaluation = evalState(current_state);
+  head_node->parent = nullptr;
+  head_node->children = std::vector<MinimaxGraphNode<STATE, MOVE> *>();
 }
 
 template <typename STATE, typename MOVE>
-MOVE MinimaxSolver<STATE, MOVE>::findBestMove(int depth) {}
+MOVE MinimaxSolver<STATE, MOVE>::findBestMove(int depth) {
+  expandNodeWithDepth(head_node, internal_state, parity, depth);
+  if (parity < 0) return minEvaluationNode(head_node)->move_taken_here;
+  if (parity > 0) return maxEvaluationNode(head_node)->move_taken_here;
+
+}
