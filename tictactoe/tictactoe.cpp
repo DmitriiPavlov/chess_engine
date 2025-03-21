@@ -33,25 +33,32 @@ std::vector<TicTacToeMove> generatePositiveMoves(const TicTacToeBoard& board){
   return moves;
 }
 
-float evalState(TicTacToeBoard board){
+float determineInf(int player){
+  if (player == -1){
+    return -INFINITY;
+  }
+  return INFINITY;
+}
+
+float evalState(TicTacToeBoard& board){
   for (int x = 0; x < 3; x++){
     if (board.array[x][0] == board.array[x][1] && board.array[x][1] == board.array[x][2] && board.array[x][0] != 0){
-      return board.array[x][0]*INFINITY;
+      return determineInf(board.array[x][0]);
     }
   }
 
   for (int y = 0; y < 3; y++){
     if (board.array[0][y] == board.array[1][y] && board.array[1][y] == board.array[2][y] && board.array[0][y] != 0){
-      return board.array[0][y]*INFINITY;
+      return determineInf(board.array[0][y]);
     }
   }
     
   if (board.array[0][0] == board.array[1][1] && board.array[1][1] == board.array[2][2] && board.array[0][0] != 0){
-      return board.array[0][0]*INFINITY;
+      return determineInf(board.array[0][0]);
   }
 
   if (board.array[0][2] == board.array[1][1] && board.array[1][1] == board.array[2][0] && board.array[0][2] != 0){
-      return board.array[0][0]*INFINITY;
+      return determineInf(board.array[0][0]);
   }
 
   return 0;

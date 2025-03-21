@@ -1,5 +1,5 @@
 #include "minimax_algorithm.h"
-#include <algorithm>
+#include <iostream>
 // assumes the existence of these methods:
 //
 // std::vector<MOVE> generateNegativeMoves(STATE state)
@@ -37,34 +37,39 @@ void populateChildren(MinimaxGraphNode<STATE, MOVE> *node, STATE state,
 
     node->children.push_back(new_node);
   }
+
+  if (possible_moves.size() == 0) {
+    node->evaluation = 0;
+  }
 }
 
 template <typename STATE, typename MOVE>
 MinimaxGraphNode<STATE, MOVE> *
 minEvaluationNode(std::vector<MinimaxGraphNode<STATE, MOVE> *> node_list) {
-  float min = 0;
-  MinimaxGraphNode<STATE, MOVE> *out;
+  float min = INFINITY;
+  MinimaxGraphNode<STATE, MOVE> *out = node_list[0];
+  out->evaluation = min;
   for (auto *node : node_list) {
     if (node->evaluation < min) {
       min = node->evaluation;
       out = node;
     }
   }
-  return min;
+  return out;
 }
 
 template <typename STATE, typename MOVE>
 MinimaxGraphNode<STATE, MOVE> *
 maxEvaluationNode(std::vector<MinimaxGraphNode<STATE, MOVE> *> node_list) {
-  float max = 0;
-  MinimaxGraphNode<STATE, MOVE> *out;
+  float max = -INFINITY;
+  MinimaxGraphNode<STATE, MOVE> *out = node_list[0];
   for (auto *node : node_list) {
     if (node->evaluation > max) {
       max = node->evaluation;
       out = node;
     }
   }
-  return max;
+  return out;
 }
 
 // this goes through and updates the evaluation of a node recursively, based on
@@ -75,15 +80,13 @@ template <typename STATE, typename MOVE>
 void updateEvaluation(MinimaxGraphNode<STATE, MOVE> *node, int8_t parity) {
   float original_evaluation = node->evaluation;
 
-  if (parity < 0)
-    node->evaluation =
-        std::min(node->evaluation, minEvaluationNode(node->children)->evaluation);
-  if (parity > 0)
-    node->evaluation =
-        std::max(node->evaluation, maxEvaluationNode(node->children)->evaluation);
+  if (parity < 0 && node->children.size() != 0)
+    node->evaluation = minEvaluationNode(node->children)->evaluation;
+  if (parity > 0 && node->children.size() != 0)
+    node->evaluation = maxEvaluationNode(node->children)->evaluation;
 
   if (original_evaluation != node->evaluation && node->parent != nullptr)
-    updateEvaluation(node->parent);
+    updateEvaluation<STATE, MOVE>(node->parent, -1 * parity);
 }
 
 // this magical function is going to do 3 things at once
@@ -94,20 +97,22 @@ void updateEvaluation(MinimaxGraphNode<STATE, MOVE> *node, int8_t parity) {
 template <typename STATE, typename MOVE>
 void expandNode(MinimaxGraphNode<STATE, MOVE> *node, STATE state,
                 int8_t parity) {
-  populateChildren(node, state, parity);
-  updateEvaluation(node, parity);
+  populateChildren<STATE, MOVE>(node, state, parity);
+  updateEvaluation<STATE, MOVE>(node, -1*parity);
 }
 
 template <typename STATE, typename MOVE>
 void expandNodeWithDepth(MinimaxGraphNode<STATE, MOVE> *node, STATE state,
                          int8_t parity, int depth) {
-  if (depth == 0)
+  if (depth == 0 || node->evaluation == INFINITY ||
+      node->evaluation == -1 * INFINITY)
     return;
-  expandNode(node);
+  expandNode<STATE, MOVE>(node, state, parity);
 
   for (auto *node : node->children) {
-    expandNode(node, playMove(state, node->move_taken_here), -1 * parity,
-               depth - 1);
+    playMove(state, node->move_taken_here);
+    expandNodeWithDepth<STATE, MOVE>(node, state, -1 * parity, depth - 1);
+    undoMove(state, node->move_taken_here);
   }
 }
 
@@ -117,6 +122,7 @@ MinimaxSolver<STATE, MOVE>::MinimaxSolver(STATE current_state, int8_t parity) {
   this->parity = parity;
 
   this->head_node = new MinimaxGraphNode<STATE, MOVE>();
+
   head_node->evaluation = evalState(current_state);
   head_node->parent = nullptr;
   head_node->children = std::vector<MinimaxGraphNode<STATE, MOVE> *>();
@@ -124,8 +130,9 @@ MinimaxSolver<STATE, MOVE>::MinimaxSolver(STATE current_state, int8_t parity) {
 
 template <typename STATE, typename MOVE>
 MOVE MinimaxSolver<STATE, MOVE>::findBestMove(int depth) {
-  expandNodeWithDepth(head_node, internal_state, parity, depth);
-  if (parity < 0) return minEvaluationNode(head_node)->move_taken_here;
-  if (parity > 0) return maxEvaluationNode(head_node)->move_taken_here;
-
+  expandNodeWithDepth<STATE, MOVE>(head_node, internal_state, parity, depth);
+  if (parity < 0)
+    return minEvaluationNode(head_node->children)->move_taken_here;
+  if (parity > 0)
+    return maxEvaluationNode(head_node->children)->move_taken_here;
 }

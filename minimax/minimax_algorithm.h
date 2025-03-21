@@ -26,7 +26,7 @@ template <typename STATE, typename MOVE> struct MinimaxGraphNode {
 template <typename STATE, typename MOVE> class MinimaxSolver {
 private:
   STATE internal_state;
-  MinimaxGraphNode<STATE,MOVE> head_node;
+  MinimaxGraphNode<STATE,MOVE>* head_node;
   int8_t parity;
 
 

@@ -1,15 +1,18 @@
-//internal
+// internal
 #include "board_representation.h"
+#include "minimax/minimax_algorithm.cpp"
+#include "minimax/minimax_algorithm.h"
 #include "render.h"
+#include "tictactoe/tictactoe.cpp"
+#include "tictactoe/tictactoe.h"
 
+template class MinimaxSolver<TicTacToeBoard, TicTacToeMove>;
 
-int main(){
-	SlowBoardInterface board = SlowBoardInterface();
-	printBoard(board.bitmask);
-	std::cout<<"\n";
-	board.setPiece(0,0,PIECE::WHITE_KNIGHT);
-	board.setPiece(1,3,PIECE::BLACK_KING);
-	printBoard(board.bitmask);
-	
-	return 0;
+int main() {
+  TicTacToeBoard board;
+  MinimaxSolver<TicTacToeBoard, TicTacToeMove> solver(board, -1);
+  TicTacToeMove move = solver.findBestMove(8);
+  std::cout << move.x << "\n";;
+  std::cout << move.y << "\n";
+  return 0;
 }
