@@ -5,6 +5,8 @@
 #include <cstdint>
 #include <vector>
 #include <algorithm>
+#include <map>
+
 // assumes the existence of these methods:
 //
 // std::vector<MOVE> generateNegativeMoves(STATE state)
@@ -27,6 +29,7 @@ template <typename STATE, typename MOVE> class MinimaxSolver {
 private:
   STATE internal_state;
   MinimaxGraphNode<STATE,MOVE>* head_node;
+  std::map<STATE,MinimaxGraphNode<STATE,MOVE>*> node_cache;
   int8_t parity;
 
 
